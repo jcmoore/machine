@@ -25,7 +25,7 @@ func cmdRm(c *cli.Context) {
 		log.Fatal(err)
 	}
 
-	provider, err := newProvider(defaultStore)
+	provider, err := newProvider(defaultStore, newContextWrapper(c))
 	if err != nil {
 		log.Fatal(err)
 	}

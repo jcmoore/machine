@@ -50,12 +50,21 @@ func newOauthClient(storePath, authTokenPath string) *http.Client {
 
 func token(storePath, authTokenPath string, config *oauth.Config) *oauth.Token {
 	tokenPath := authTokenPath
-	if authTokenPath == "" {
-		tokenPath = filepath.Join(storePath, "gce_token")
+	if authTokenPath != "" {
+		log.Debugf("trying auth token: %s", tokenPath)
+		if token, err := tokenFromCache(tokenPath); err == nil {
+			saveToken(storePath, token)
+			return token;
+		}
+	} else {
+		log.Debugf("no token path specified")
 	}
-	log.Debugf("using auth token: %s", tokenPath)
+
+	tokenPath = filepath.Join(storePath, "gce_token")
+	log.Debugf("trying auth token: %s", tokenPath)
 	token, err := tokenFromCache(tokenPath)
 	if err != nil {
+		log.Debugf("resorting to web token")
 		token = tokenFromWeb(config)
 		saveToken(storePath, token)
 	}

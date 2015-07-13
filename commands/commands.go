@@ -8,6 +8,8 @@ import (
 	"runtime"
 	"sort"
 	"strings"
+	"flag"
+	"strconv"
 
 	"github.com/codegangsta/cli"
 	"github.com/skarademir/naturalsort"
@@ -56,6 +58,15 @@ type machineConfig struct {
 	SwarmOptions   swarm.SwarmOptions
 }
 
+type cliContextWrapper struct {
+	context *cli.Context
+	driver  string
+}
+
+func newContextWrapper (c *cli.Context) *cliContextWrapper {
+	return &cliContextWrapper{c, ""}
+}
+
 func sortHostListItemsByName(items []libmachine.HostListItem) {
 	m := make(map[string]libmachine.HostListItem, len(items))
 	s := make([]string, len(items))
@@ -88,8 +99,8 @@ func confirmInput(msg string) bool {
 	return false
 }
 
-func newProvider(store libmachine.Store) (*libmachine.Provider, error) {
-	return libmachine.New(store)
+func newProvider(store libmachine.Store, driverConfig drivers.SpecificDriverOptions) (*libmachine.Provider, error) {
+	return libmachine.New(store, driverConfig)
 }
 
 func getMachineDir(rootPath string) string {
@@ -508,7 +519,7 @@ func loadMachine(name string, c *cli.Context) (*libmachine.Host, error) {
 		log.Fatal(err)
 	}
 
-	provider, err := newProvider(defaultStore)
+	provider, err := newProvider(defaultStore, newContextWrapper(c))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -533,7 +544,7 @@ func getHost(c *cli.Context) *libmachine.Host {
 		log.Fatal(err)
 	}
 
-	provider, err := newProvider(defaultStore)
+	provider, err := newProvider(defaultStore, newContextWrapper(c))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -556,7 +567,7 @@ func getDefaultProvider(c *cli.Context) *libmachine.Provider {
 		log.Fatal(err)
 	}
 
-	provider, err := newProvider(defaultStore)
+	provider, err := newProvider(defaultStore, newContextWrapper(c))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -576,7 +587,7 @@ func getMachineConfig(c *cli.Context) (*machineConfig, error) {
 		log.Fatal(err)
 	}
 
-	provider, err := newProvider(defaultStore)
+	provider, err := newProvider(defaultStore, newContextWrapper(c))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -669,4 +680,72 @@ func detectShell() (string, error) {
 	}
 
 	return shell, nil
+}
+
+var (
+	globalDriverFlagSets map[string]*flag.FlagSet
+)
+
+func (wrapper *cliContextWrapper) String(key string) string {
+	if set, ok := globalDriverFlagSets[wrapper.driver]; ok {
+		if lookup := set.Lookup(key); lookup != nil {
+			return lookup.Value.String()
+		}
+	}
+	return wrapper.context.String(key)
+}
+
+func (wrapper *cliContextWrapper) StringSlice(key string) []string {
+        if set, ok := globalDriverFlagSets[wrapper.driver]; ok {
+                if lookup := set.Lookup(key); lookup != nil {
+                        return (lookup.Value.(*cli.StringSlice)).Value()
+                }
+        }
+        return wrapper.context.StringSlice(key)
+}
+
+func (wrapper *cliContextWrapper) Int(key string) int {
+	if set, ok := globalDriverFlagSets[wrapper.driver]; ok {
+                if lookup := set.Lookup(key); lookup != nil {
+			if val, err := strconv.Atoi(lookup.Value.String()); err == nil {
+				return val
+			}
+		}
+        }
+        return wrapper.context.Int(key)
+}
+
+func (wrapper *cliContextWrapper) Bool(key string) bool {
+        if set, ok := globalDriverFlagSets[wrapper.driver]; ok {
+                if lookup := set.Lookup(key); lookup != nil {
+                        if val, err := strconv.ParseBool(lookup.Value.String()); err == nil {
+                                return val
+                        }
+                }
+        }
+        return wrapper.context.Bool(key)
+}
+
+func (wrapper *cliContextWrapper) SpecifyFlags(driver string) (drivers.SpecificDriverOptions, error) {
+	if globalDriverFlagSets == nil {
+		globalDriverFlagSets = make(map[string]*flag.FlagSet)
+	}
+
+	if globalDriverFlagSets[driver] == nil {
+		set := flag.NewFlagSet(wrapper.context.App.Name, flag.ContinueOnError)
+		globalDriverFlagSets[driver] = set
+		flags, err := drivers.GetCreateFlagsForDriver(driver)
+
+		if err != nil {
+			return nil, err
+		}
+
+		for _, f := range flags {
+			f.Apply(set)
+		}
+
+		set.Parse([]string{})
+	}
+
+	return &cliContextWrapper{wrapper.context, driver}, nil
 }

@@ -3,23 +3,28 @@ package libmachine
 import (
 	"fmt"
 	"os"
-	"path/filepath"
+	"errors"
 
 	"github.com/docker/machine/drivers"
-	"github.com/docker/machine/utils"
 )
 
 type Provider struct {
 	store Store
+	driverConfig drivers.SpecificDriverOptions
 }
 
-func New(store Store) (*Provider, error) {
+func New(store Store, driverConfig drivers.SpecificDriverOptions) (*Provider, error) {
 	return &Provider{
 		store: store,
+		driverConfig: driverConfig,
 	}, nil
 }
 
-func (provider *Provider) Create(name string, driverName string, hostOptions *HostOptions, driverConfig drivers.DriverOptions) (*Host, error) {
+func (provider *Provider) getDriverConfig(driver string) (drivers.SpecificDriverOptions, error) {
+	return provider.driverConfig.SpecifyFlags(driver)
+}
+
+func (provider *Provider) Create(name string, driverName string, hostOptions *HostOptions) (*Host, error) {
 	validName := ValidateHostName(name)
 	if !validName {
 		return nil, ErrInvalidHostname
@@ -32,23 +37,21 @@ func (provider *Provider) Create(name string, driverName string, hostOptions *Ho
 		return nil, fmt.Errorf("Machine %s already exists", name)
 	}
 
-	hostPath := filepath.Join(utils.GetMachineDir(), name)
-
 	host, err := NewHost(name, driverName, hostOptions)
 	if err != nil {
 		return host, err
 	}
-	if driverConfig != nil {
-		if err := host.Driver.SetConfigFromFlags(driverConfig); err != nil {
-			return host, err
-		}
+
+	driverConfig, err := provider.getDriverConfig(driverName)
+	if err != nil {
+		return host, err
 	}
 
-	if err := host.Driver.PreCreateCheck(); err != nil {
-		return nil, err
+	if err := host.SetDriverConfigFromFlags(driverConfig); err != nil {
+		return host, err
 	}
 
-	if err := os.MkdirAll(hostPath, 0700); err != nil {
+	if err := host.Prepare(); err != nil {
 		return nil, err
 	}
 
@@ -68,11 +71,48 @@ func (provider *Provider) Exists(name string) (bool, error) {
 }
 
 func (provider *Provider) GetActive() (*Host, error) {
-	return provider.store.GetActive()
+	hosts, err := provider.List()
+	if err != nil {
+		return nil, err
+	}
+
+	dockerHost := os.Getenv("DOCKER_HOST")
+	hostListItems := GetHostListItems(hosts)
+
+	for _, item := range hostListItems {
+		if dockerHost == item.URL {
+			host, err := provider.store.Get(item.Name)
+			if err != nil {
+				return nil, err
+			}
+			return host, nil
+		}
+	}
+
+	return nil, errors.New("Active host not found")
 }
 
 func (provider *Provider) List() ([]*Host, error) {
-	return provider.store.List()
+	hosts, fatal := provider.store.List()
+
+	if fatal != nil {
+		return nil, fatal
+	}
+
+	for _, host := range hosts {
+		driverConfig, err := provider.getDriverConfig(host.DriverName)
+	        if err != nil {
+	                fatal = err
+	        }
+
+	        if err := host.SetDriverConfigFromFlags(driverConfig); err != nil {
+        		if fatal != nil {
+				fatal = err
+			}
+	        }
+	}
+
+	return hosts, fatal
 }
 
 func (provider *Provider) Get(name string) (*Host, error) {
@@ -81,13 +121,25 @@ func (provider *Provider) Get(name string) (*Host, error) {
 
 func (provider *Provider) Remove(name string, force bool) error {
 	host, err := provider.store.Get(name)
+
 	if err != nil {
 		return err
 	}
+
+	driverConfig, err := provider.getDriverConfig(host.DriverName)
+        if err != nil {
+                return err
+        }
+
+        if err := host.SetDriverConfigFromFlags(driverConfig); err != nil {
+                return err
+        }
+
 	if err := host.Remove(force); err != nil {
 		if !force {
 			return err
 		}
 	}
+
 	return provider.store.Remove(name, force)
 }

@@ -169,6 +169,11 @@ type DriverOptions interface {
 	Bool(key string) bool
 }
 
+type SpecificDriverOptions interface {
+	DriverOptions
+	SpecifyFlags(driver string) (SpecificDriverOptions, error)
+}
+
 func MachineInState(d Driver, desiredState state.State) func() bool {
 	return func() bool {
 		currentState, err := d.GetState()

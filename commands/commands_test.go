@@ -97,7 +97,7 @@ func getDefaultTestHost() (*libmachine.Host, error) {
 	}
 
 	flags := getTestDriverFlags()
-	if err := host.Driver.SetConfigFromFlags(flags); err != nil {
+	if err := host.SetDriverConfigFromFlags(flags); err != nil {
 		return nil, err
 	}
 
