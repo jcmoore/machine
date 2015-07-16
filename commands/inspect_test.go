@@ -75,7 +75,7 @@ func runInspectCommand(t *testing.T, args []string) (string, *libmachine.Host) {
 
 	flags := getTestDriverFlags()
 
-	provider, err := libmachine.New(store, flags)
+	provider, err := libmachine.New(store, flags, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

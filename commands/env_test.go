@@ -43,7 +43,7 @@ func TestCmdEnvBash(t *testing.T) {
 		t.Fatal(sErr)
 	}
 
-	provider, err := libmachine.New(store, flags)
+	provider, err := libmachine.New(store, flags, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -142,7 +142,7 @@ func TestCmdEnvFish(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	provider, err := libmachine.New(store, flags)
+	provider, err := libmachine.New(store, flags, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -241,7 +241,7 @@ func TestCmdEnvPowerShell(t *testing.T) {
 		t.Fatal(sErr)
 	}
 
-	provider, err := libmachine.New(store, flags)
+	provider, err := libmachine.New(store, flags, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

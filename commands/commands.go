@@ -58,13 +58,17 @@ type machineConfig struct {
 	SwarmOptions   swarm.SwarmOptions
 }
 
-type cliContextWrapper struct {
-	context *cli.Context
+type globallyExtendedDeviceOptions struct {
+	options drivers.DriverOptions
 	driver  string
 }
 
-func newContextWrapper (c *cli.Context) *cliContextWrapper {
-	return &cliContextWrapper{c, ""}
+type globalFlagSpecifier struct {
+	context *cli.Context
+}
+
+func newGlobalFlagSpecifier (context *cli.Context) *globalFlagSpecifier {
+	return &globalFlagSpecifier{context}
 }
 
 func sortHostListItemsByName(items []libmachine.HostListItem) {
@@ -99,8 +103,8 @@ func confirmInput(msg string) bool {
 	return false
 }
 
-func newProvider(store libmachine.Store, driverConfig drivers.SpecificDriverOptions) (*libmachine.Provider, error) {
-	return libmachine.New(store, driverConfig)
+func newProvider(store libmachine.Store, config drivers.DriverOptions, specifier *globalFlagSpecifier) (*libmachine.Provider, error) {
+	return libmachine.New(store, config, specifier)
 }
 
 func getMachineDir(rootPath string) string {
@@ -519,7 +523,7 @@ func loadMachine(name string, c *cli.Context) (*libmachine.Host, error) {
 		log.Fatal(err)
 	}
 
-	provider, err := newProvider(defaultStore, newContextWrapper(c))
+	provider, err := newProvider(defaultStore, c, newGlobalFlagSpecifier(c))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -544,7 +548,7 @@ func getHost(c *cli.Context) *libmachine.Host {
 		log.Fatal(err)
 	}
 
-	provider, err := newProvider(defaultStore, newContextWrapper(c))
+	provider, err := newProvider(defaultStore, c, newGlobalFlagSpecifier(c))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -567,7 +571,7 @@ func getDefaultProvider(c *cli.Context) *libmachine.Provider {
 		log.Fatal(err)
 	}
 
-	provider, err := newProvider(defaultStore, newContextWrapper(c))
+	provider, err := newProvider(defaultStore, c, newGlobalFlagSpecifier(c))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -587,7 +591,7 @@ func getMachineConfig(c *cli.Context) (*machineConfig, error) {
 		log.Fatal(err)
 	}
 
-	provider, err := newProvider(defaultStore, newContextWrapper(c))
+	provider, err := newProvider(defaultStore, c, newGlobalFlagSpecifier(c))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -683,56 +687,56 @@ func detectShell() (string, error) {
 }
 
 var (
-	globalDriverFlagSets map[string]*flag.FlagSet
+	globalDriverFlagSets = make(map[string]*flag.FlagSet)
 )
 
-func (wrapper *cliContextWrapper) String(key string) string {
-	if set, ok := globalDriverFlagSets[wrapper.driver]; ok {
+func (g *globallyExtendedDeviceOptions) String(key string) string {
+	if set, ok := globalDriverFlagSets[g.driver]; ok {
 		if lookup := set.Lookup(key); lookup != nil {
 			return lookup.Value.String()
 		}
 	}
-	return wrapper.context.String(key)
+	return g.options.String(key)
 }
 
-func (wrapper *cliContextWrapper) StringSlice(key string) []string {
-        if set, ok := globalDriverFlagSets[wrapper.driver]; ok {
+func (g *globallyExtendedDeviceOptions) StringSlice(key string) []string {
+        if set, ok := globalDriverFlagSets[g.driver]; ok {
                 if lookup := set.Lookup(key); lookup != nil {
                         return (lookup.Value.(*cli.StringSlice)).Value()
                 }
         }
-        return wrapper.context.StringSlice(key)
+        return g.options.StringSlice(key)
 }
 
-func (wrapper *cliContextWrapper) Int(key string) int {
-	if set, ok := globalDriverFlagSets[wrapper.driver]; ok {
+func (g *globallyExtendedDeviceOptions) Int(key string) int {
+	if set, ok := globalDriverFlagSets[g.driver]; ok {
                 if lookup := set.Lookup(key); lookup != nil {
 			if val, err := strconv.Atoi(lookup.Value.String()); err == nil {
 				return val
 			}
 		}
         }
-        return wrapper.context.Int(key)
+        return g.options.Int(key)
 }
 
-func (wrapper *cliContextWrapper) Bool(key string) bool {
-        if set, ok := globalDriverFlagSets[wrapper.driver]; ok {
+func (g *globallyExtendedDeviceOptions) Bool(key string) bool {
+        if set, ok := globalDriverFlagSets[g.driver]; ok {
                 if lookup := set.Lookup(key); lookup != nil {
                         if val, err := strconv.ParseBool(lookup.Value.String()); err == nil {
                                 return val
                         }
                 }
         }
-        return wrapper.context.Bool(key)
+        return g.options.Bool(key)
 }
 
-func (wrapper *cliContextWrapper) SpecifyFlags(driver string) (drivers.SpecificDriverOptions, error) {
-	if globalDriverFlagSets == nil {
-		globalDriverFlagSets = make(map[string]*flag.FlagSet)
+func (g *globalFlagSpecifier) SpecifyFlags(driver string, options drivers.DriverOptions) (drivers.DriverOptions, error) {
+	if options == nil {
+		return nil, errors.New("Error: Expected base DriverOptions but none was supplied.")
 	}
 
 	if globalDriverFlagSets[driver] == nil {
-		set := flag.NewFlagSet(wrapper.context.App.Name, flag.ContinueOnError)
+		set := flag.NewFlagSet(g.context.App.Name, flag.ContinueOnError)
 		globalDriverFlagSets[driver] = set
 		flags, err := drivers.GetCreateFlagsForDriver(driver)
 
@@ -747,5 +751,5 @@ func (wrapper *cliContextWrapper) SpecifyFlags(driver string) (drivers.SpecificD
 		set.Parse([]string{})
 	}
 
-	return &cliContextWrapper{wrapper.context, driver}, nil
+	return &globallyExtendedDeviceOptions{options, driver}, nil
 }

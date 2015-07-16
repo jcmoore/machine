@@ -10,18 +10,25 @@ import (
 
 type Provider struct {
 	store Store
-	driverConfig drivers.SpecificDriverOptions
+	driverConfig    drivers.DriverOptions
+	driverSpecifier drivers.OptionsSpecifier
 }
 
-func New(store Store, driverConfig drivers.SpecificDriverOptions) (*Provider, error) {
+func New(store Store, config drivers.DriverOptions, specifier drivers.OptionsSpecifier) (*Provider, error) {
 	return &Provider{
 		store: store,
-		driverConfig: driverConfig,
+		driverConfig: config,
+		driverSpecifier: specifier,
 	}, nil
 }
 
-func (provider *Provider) getDriverConfig(driver string) (drivers.SpecificDriverOptions, error) {
-	return provider.driverConfig.SpecifyFlags(driver)
+func (provider *Provider) getDriverConfig(driver string) (drivers.DriverOptions, error) {
+	if provider.driverSpecifier != nil {
+		driverConfig, err := provider.driverSpecifier.SpecifyFlags(driver, provider.driverConfig)
+		return driverConfig, err
+	} else {
+		return provider.driverConfig, nil;
+	}
 }
 
 func (provider *Provider) Create(name string, driverName string, hostOptions *HostOptions) (*Host, error) {
@@ -47,8 +54,10 @@ func (provider *Provider) Create(name string, driverName string, hostOptions *Ho
 		return host, err
 	}
 
-	if err := host.SetDriverConfigFromFlags(driverConfig); err != nil {
-		return host, err
+	if driverConfig != nil {
+		if err := host.SetDriverConfigFromFlags(driverConfig); err != nil {
+			return host, err
+		}
 	}
 
 	if err := host.Prepare(); err != nil {
@@ -105,11 +114,13 @@ func (provider *Provider) List() ([]*Host, error) {
 	                fatal = err
 	        }
 
-	        if err := host.SetDriverConfigFromFlags(driverConfig); err != nil {
-        		if fatal != nil {
-				fatal = err
-			}
-	        }
+		if driverConfig != nil {
+		        if err := host.SetDriverConfigFromFlags(driverConfig); err != nil {
+				if fatal != nil {
+					fatal = err
+				}
+		        }
+		}
 	}
 
 	return hosts, fatal
@@ -131,9 +142,11 @@ func (provider *Provider) Remove(name string, force bool) error {
                 return err
         }
 
-        if err := host.SetDriverConfigFromFlags(driverConfig); err != nil {
-                return err
-        }
+	if driverConfig != nil {
+	        if err := host.SetDriverConfigFromFlags(driverConfig); err != nil {
+	                return err
+	        }
+	}
 
 	if err := host.Remove(force); err != nil {
 		if !force {

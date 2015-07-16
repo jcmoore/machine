@@ -153,7 +153,7 @@ func (s ScpFakeStore) Save(host *libmachine.Host) error {
 }
 
 func TestGetInfoForScpArg(t *testing.T) {
-	provider, _ := libmachine.New(ScpFakeStore{}, nil)
+	provider, _ := libmachine.New(ScpFakeStore{}, nil, nil)
 
 	expectedPath := "/tmp/foo"
 	host, path, opts, err := getInfoForScpArg("/tmp/foo", *provider)
@@ -220,7 +220,7 @@ func TestGenerateLocationArg(t *testing.T) {
 }
 
 func TestGetScpCmd(t *testing.T) {
-	provider, _ := libmachine.New(ScpFakeStore{}, nil)
+	provider, _ := libmachine.New(ScpFakeStore{}, nil, nil)
 
 	// TODO: This is a little "integration-ey".  Perhaps
 	// make an ScpDispatcher (name?) interface so that the reliant

@@ -7,7 +7,7 @@ import (
 
 func getCustomTestProvider(store Store) (*Provider, error) {
 	flags := getTestDriverFlags()
-	return New(store, &SpecificDriverOptionsMock{*flags})
+	return New(store, flags, nil)
 }
 
 func TestProviderGetSetActive(t *testing.T) {

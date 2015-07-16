@@ -22,7 +22,7 @@ func cmdActive(c *cli.Context) {
 		log.Fatal(err)
 	}
 
-	provider, err := newProvider(defaultStore, newContextWrapper(c))
+	provider, err := newProvider(defaultStore, c, newGlobalFlagSpecifier(c))
 	if err != nil {
 		log.Fatal(err)
 	}

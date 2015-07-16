@@ -36,7 +36,7 @@ func TestCmdConfig(t *testing.T) {
 
 	flags := getTestDriverFlags()
 
-	provider, err := libmachine.New(store, flags)
+	provider, err := libmachine.New(store, flags, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -29,14 +29,6 @@ func (d DriverOptionsMock) Bool(key string) bool {
 	return d.Data[key].(bool)
 }
 
-type SpecificDriverOptionsMock struct {
-	DriverOptionsMock
-}
-
-func (sd SpecificDriverOptionsMock) SpecifyFlags(string) (SpecificDriverOptionsMock, error) {
-	return sd, nil
-}
-
 func TestStoreSave(t *testing.T) {
 	defer cleanup()
 
