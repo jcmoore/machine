@@ -115,11 +115,8 @@ func (provider *Provider) List() ([]*Host, error) {
 	        }
 
 		if driverConfig != nil {
-		        if err := host.SetDriverConfigFromFlags(driverConfig); err != nil {
-				if fatal != nil {
-					fatal = err
-				}
-		        }
+		        // errors ignored -- driver config optional for List()
+			host.SetDriverConfigFromFlags(driverConfig)
 		}
 	}
 
@@ -143,9 +140,8 @@ func (provider *Provider) Remove(name string, force bool) error {
         }
 
 	if driverConfig != nil {
-	        if err := host.SetDriverConfigFromFlags(driverConfig); err != nil {
-	                return err
-	        }
+	        // errors ignored -- driver config optional for Remove()
+		host.SetDriverConfigFromFlags(driverConfig)
 	}
 
 	if err := host.Remove(force); err != nil {

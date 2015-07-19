@@ -167,6 +167,7 @@ type DriverOptions interface {
 	StringSlice(key string) []string
 	Int(key string) int
 	Bool(key string) bool
+	IsSet(key string) bool
 }
 
 type OptionsSpecifier interface {

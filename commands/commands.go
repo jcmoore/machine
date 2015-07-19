@@ -691,43 +691,62 @@ var (
 )
 
 func (g *globallyExtendedDeviceOptions) String(key string) string {
-	if set, ok := globalDriverFlagSets[g.driver]; ok {
-		if lookup := set.Lookup(key); lookup != nil {
-			return lookup.Value.String()
+	if !g.options.IsSet(key) {
+		if set, ok := globalDriverFlagSets[g.driver]; ok {
+			if lookup := set.Lookup(key); lookup != nil {
+				return lookup.Value.String()
+			}
 		}
 	}
 	return g.options.String(key)
 }
 
 func (g *globallyExtendedDeviceOptions) StringSlice(key string) []string {
-        if set, ok := globalDriverFlagSets[g.driver]; ok {
-                if lookup := set.Lookup(key); lookup != nil {
-                        return (lookup.Value.(*cli.StringSlice)).Value()
-                }
-        }
+	if !g.options.IsSet(key) {
+		if set, ok := globalDriverFlagSets[g.driver]; ok {
+			if lookup := set.Lookup(key); lookup != nil {
+				return (lookup.Value.(*cli.StringSlice)).Value()
+			}
+		}
+	}
         return g.options.StringSlice(key)
 }
 
 func (g *globallyExtendedDeviceOptions) Int(key string) int {
-	if set, ok := globalDriverFlagSets[g.driver]; ok {
-                if lookup := set.Lookup(key); lookup != nil {
-			if val, err := strconv.Atoi(lookup.Value.String()); err == nil {
-				return val
+	if !g.options.IsSet(key) {
+		if set, ok := globalDriverFlagSets[g.driver]; ok {
+			if lookup := set.Lookup(key); lookup != nil {
+				if val, err := strconv.Atoi(lookup.Value.String()); err == nil {
+					return val
+				}
 			}
 		}
-        }
+	}
         return g.options.Int(key)
 }
 
 func (g *globallyExtendedDeviceOptions) Bool(key string) bool {
-        if set, ok := globalDriverFlagSets[g.driver]; ok {
-                if lookup := set.Lookup(key); lookup != nil {
-                        if val, err := strconv.ParseBool(lookup.Value.String()); err == nil {
-                                return val
-                        }
-                }
-        }
+        if !g.options.IsSet(key) {
+		if set, ok := globalDriverFlagSets[g.driver]; ok {
+			if lookup := set.Lookup(key); lookup != nil {
+				if val, err := strconv.ParseBool(lookup.Value.String()); err == nil {
+					return val
+				}
+			}
+		}
+	}
         return g.options.Bool(key)
+}
+
+func (g *globallyExtendedDeviceOptions) IsSet(key string) bool {
+	if g.options.IsSet(key) {
+		return true
+	} else if set, ok := globalDriverFlagSets[g.driver]; ok {
+		if lookup := set.Lookup(key); lookup != nil {
+			return true
+		}
+	}
+	return false
 }
 
 func (g *globalFlagSpecifier) SpecifyFlags(driver string, options drivers.DriverOptions) (drivers.DriverOptions, error) {

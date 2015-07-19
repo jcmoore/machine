@@ -29,6 +29,11 @@ func (d DriverOptionsMock) Bool(key string) bool {
 	return d.Data[key].(bool)
 }
 
+func (d DriverOptionsMock) IsSet(key string) bool {
+	_, ok := d.Data[key];
+	return ok
+}
+
 func TestStoreSave(t *testing.T) {
 	defer cleanup()
 
