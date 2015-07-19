@@ -1,23 +1,23 @@
 package libmachine
 
 import (
+	"errors"
 	"fmt"
 	"os"
-	"errors"
 
 	"github.com/docker/machine/drivers"
 )
 
 type Provider struct {
-	store Store
+	store           Store
 	driverConfig    drivers.DriverOptions
 	driverSpecifier drivers.OptionsSpecifier
 }
 
 func New(store Store, config drivers.DriverOptions, specifier drivers.OptionsSpecifier) (*Provider, error) {
 	return &Provider{
-		store: store,
-		driverConfig: config,
+		store:           store,
+		driverConfig:    config,
 		driverSpecifier: specifier,
 	}, nil
 }
@@ -27,7 +27,7 @@ func (provider *Provider) getDriverConfig(driver string) (drivers.DriverOptions,
 		driverConfig, err := provider.driverSpecifier.SpecifyFlags(driver, provider.driverConfig)
 		return driverConfig, err
 	} else {
-		return provider.driverConfig, nil;
+		return provider.driverConfig, nil
 	}
 }
 
@@ -110,12 +110,12 @@ func (provider *Provider) List() ([]*Host, error) {
 
 	for _, host := range hosts {
 		driverConfig, err := provider.getDriverConfig(host.DriverName)
-	        if err != nil {
-	                fatal = err
-	        }
+		if err != nil {
+			fatal = err
+		}
 
 		if driverConfig != nil {
-		        // errors ignored -- driver config optional for List()
+			// errors ignored -- driver config optional for List()
 			host.SetDriverConfigFromFlags(driverConfig)
 		}
 	}
@@ -135,12 +135,12 @@ func (provider *Provider) Remove(name string, force bool) error {
 	}
 
 	driverConfig, err := provider.getDriverConfig(host.DriverName)
-        if err != nil {
-                return err
-        }
+	if err != nil {
+		return err
+	}
 
 	if driverConfig != nil {
-	        // errors ignored -- driver config optional for Remove()
+		// errors ignored -- driver config optional for Remove()
 		host.SetDriverConfigFromFlags(driverConfig)
 	}
 

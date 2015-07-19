@@ -30,7 +30,7 @@ func (d DriverOptionsMock) Bool(key string) bool {
 }
 
 func (d DriverOptionsMock) IsSet(key string) bool {
-	_, ok := d.Data[key];
+	_, ok := d.Data[key]
 	return ok
 }
 

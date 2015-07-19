@@ -110,4 +110,3 @@ func (s Filestore) Exists(name string) (bool, error) {
 func (s Filestore) Get(name string) (*Host, error) {
 	return s.loadHost(name)
 }
-

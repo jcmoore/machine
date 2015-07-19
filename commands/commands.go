@@ -2,14 +2,14 @@ package commands
 
 import (
 	"errors"
+	"flag"
 	"fmt"
 	"os"
 	"path/filepath"
 	"runtime"
 	"sort"
-	"strings"
-	"flag"
 	"strconv"
+	"strings"
 
 	"github.com/codegangsta/cli"
 	"github.com/skarademir/naturalsort"
@@ -67,7 +67,7 @@ type globalFlagSpecifier struct {
 	context *cli.Context
 }
 
-func newGlobalFlagSpecifier (context *cli.Context) *globalFlagSpecifier {
+func newGlobalFlagSpecifier(context *cli.Context) *globalFlagSpecifier {
 	return &globalFlagSpecifier{context}
 }
 
@@ -709,7 +709,7 @@ func (g *globallyExtendedDeviceOptions) StringSlice(key string) []string {
 			}
 		}
 	}
-        return g.options.StringSlice(key)
+	return g.options.StringSlice(key)
 }
 
 func (g *globallyExtendedDeviceOptions) Int(key string) int {
@@ -722,11 +722,11 @@ func (g *globallyExtendedDeviceOptions) Int(key string) int {
 			}
 		}
 	}
-        return g.options.Int(key)
+	return g.options.Int(key)
 }
 
 func (g *globallyExtendedDeviceOptions) Bool(key string) bool {
-        if !g.options.IsSet(key) {
+	if !g.options.IsSet(key) {
 		if set, ok := globalDriverFlagSets[g.driver]; ok {
 			if lookup := set.Lookup(key); lookup != nil {
 				if val, err := strconv.ParseBool(lookup.Value.String()); err == nil {
@@ -735,7 +735,7 @@ func (g *globallyExtendedDeviceOptions) Bool(key string) bool {
 			}
 		}
 	}
-        return g.options.Bool(key)
+	return g.options.Bool(key)
 }
 
 func (g *globallyExtendedDeviceOptions) IsSet(key string) bool {

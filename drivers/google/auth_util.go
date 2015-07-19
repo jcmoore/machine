@@ -54,7 +54,7 @@ func token(storePath, authTokenPath string, config *oauth.Config) *oauth.Token {
 		log.Debugf("trying auth token: %s", tokenPath)
 		if token, err := tokenFromCache(tokenPath); err == nil {
 			saveToken(storePath, token)
-			return token;
+			return token
 		}
 	} else {
 		log.Debugf("no token path specified")
