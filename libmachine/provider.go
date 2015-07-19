@@ -102,25 +102,22 @@ func (provider *Provider) GetActive() (*Host, error) {
 }
 
 func (provider *Provider) List() ([]*Host, error) {
-	hosts, fatal := provider.store.List()
+	hosts, err := provider.store.List()
 
-	if fatal != nil {
-		return nil, fatal
+	if err != nil {
+		return nil, err
 	}
 
 	for _, host := range hosts {
+		// errors ignored -- driver config optional for List()
 		driverConfig, err := provider.getDriverConfig(host.DriverName)
-		if err != nil {
-			fatal = err
-		}
 
-		if driverConfig != nil {
-			// errors ignored -- driver config optional for List()
+		if driverConfig != nil && err == nil {
 			host.SetDriverConfigFromFlags(driverConfig)
 		}
 	}
 
-	return hosts, fatal
+	return hosts, nil
 }
 
 func (provider *Provider) Get(name string) (*Host, error) {
@@ -134,13 +131,9 @@ func (provider *Provider) Remove(name string, force bool) error {
 		return err
 	}
 
+	// errors ignored -- driver config optional for Remove()
 	driverConfig, err := provider.getDriverConfig(host.DriverName)
-	if err != nil {
-		return err
-	}
-
-	if driverConfig != nil {
-		// errors ignored -- driver config optional for Remove()
+	if driverConfig != nil && err == nil {
 		host.SetDriverConfigFromFlags(driverConfig)
 	}
 
